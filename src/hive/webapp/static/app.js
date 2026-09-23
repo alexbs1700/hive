@@ -2,7 +2,7 @@
 // Every click resolves against `state.legal_moves`, which the server derived
 // from Game.legal_moves(); this file never decides what's legal on its own.
 
-const HEX_SIZE = 34;
+const HEX_SIZE = 38;
 
 const BUG_LETTER_TO_FILE = {
   Q: "queen_bee",
@@ -39,15 +39,38 @@ function hexPoints() {
 }
 
 async function loadIcons() {
+  // Each icon's own root <svg> carries presentation attributes (fill,
+  // stroke, stroke-width, ...) that its children inherit rather than
+  // repeat. Inlining just the inner markup into a plain <g> would drop
+  // that inheritance (SVG defaults to fill="black" stroke="none"), so the
+  // root's attributes are carried over onto the wrapping <g> at render time.
+  const presentationAttributes = [
+    "fill",
+    "stroke",
+    "stroke-width",
+    "stroke-linecap",
+    "stroke-linejoin",
+  ];
   const entries = Object.entries(BUG_LETTER_TO_FILE);
   await Promise.all(
     entries.map(async ([letter, file]) => {
       const response = await fetch(`/static/pieces/${file}.svg`);
       const text = await response.text();
-      const match = text.match(/<svg[^>]*>([\s\S]*)<\/svg>/);
-      iconMarkup[letter] = match ? match[1] : "";
+      const doc = new DOMParser().parseFromString(text, "image/svg+xml");
+      const root = doc.documentElement;
+      const attrs = presentationAttributes
+        .filter((name) => root.hasAttribute(name))
+        .map((name) => `${name}="${root.getAttribute(name)}"`)
+        .join(" ");
+      iconMarkup[letter] = { attrs, inner: root.innerHTML };
     })
   );
+}
+
+function iconGroup(bugType, extraAttrs) {
+  const icon = iconMarkup[bugType];
+  if (!icon) return "";
+  return `<g ${icon.attrs} ${extraAttrs || ""}>${icon.inner}</g>`;
 }
 
 function pieceInfo(code) {
@@ -151,7 +174,7 @@ function renderBoard() {
   const destSet = new Set((selected ? selected.destinations : []).map((d) => cellKey(d.q, d.r)));
   const movable = movablePieceCodes();
   const points = hexPoints();
-  const iconSize = HEX_SIZE * 1.3;
+  const iconSize = HEX_SIZE * 1.45;
   const iconOffset = -iconSize / 2;
   const iconScale = iconSize / 100;
 
@@ -174,9 +197,8 @@ function renderBoard() {
 
       html += `<g class="${pieceClasses.join(" ")}" data-piece="${topCode}">`;
       html += `<polygon class="piece-hex" points="${points}" />`;
-      html += `<g transform="translate(${iconOffset},${iconOffset}) scale(${iconScale})">${
-        iconMarkup[info.bugType] || ""
-      }</g>`;
+      const iconTransform = `translate(${iconOffset},${iconOffset}) scale(${iconScale})`;
+      html += iconGroup(info.bugType, `transform="${iconTransform}"`);
       if (occupant.stack.length > 1) {
         html += `<text class="stack-badge" x="${HEX_SIZE * 0.55}" y="${-HEX_SIZE * 0.5}">&times;${
           occupant.stack.length
@@ -207,7 +229,7 @@ function renderReserves() {
       if (isActive) classes.push("active");
       if (selected && selected.pieceCode === item.code) classes.push("selected");
       html += `<div class="${classes.join(" ")}" data-reserve="${item.code}" title="${item.bug_type}">`;
-      html += `<svg viewBox="0 0 100 100">${iconMarkup[item.code[1]] || ""}</svg>`;
+      html += `<svg viewBox="0 0 100 100">${iconGroup(item.code[1])}</svg>`;
       html += `<span class="reserve-count">${item.count}</span>`;
       html += `</div>`;
     }

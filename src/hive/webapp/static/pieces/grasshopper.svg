@@ -1,8 +1,7 @@
-<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
-  <ellipse cx="44" cy="46" rx="27" ry="11" />
-  <line x1="20" y1="40" x2="9" y2="24" />
-  <line x1="32" y1="54" x2="25" y2="70" />
-  <line x1="44" y1="56" x2="40" y2="74" />
-  <path d="M60 52 L80 58 L70 86" />
-  <path d="M60 52 L80 58" />
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+  <line x1="18" y1="38" x2="8" y2="20" stroke-width="6" />
+  <circle cx="22" cy="44" r="9" stroke="none" />
+  <ellipse cx="46" cy="50" rx="24" ry="14" stroke="none" />
+  <path d="M56 44 L88 53 L81 65 L58 55 Z" stroke="none" />
+  <path d="M79 59 L96 65 L70 93 L63 82 Z" stroke="none" />
 </svg>
