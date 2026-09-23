@@ -119,16 +119,41 @@ function movablePieceCodes() {
   return new Set(state.legal_moves.map((move) => move.piece).filter(Boolean));
 }
 
+function colorName(color) {
+  return color === "white" ? "White" : "Black";
+}
+
 function explainWhyInert(code) {
-  const color = pieceInfo(code).color;
-  const queenName = color === "white" ? "White" : "Black";
-  const queenStillInReserve = (state.reserves[color] || []).some(
+  const pieceColor = pieceInfo(code).color;
+  const currentColor = state.current_turn;
+  const queenStillInReserve = (state.reserves[currentColor] || []).some(
     (item) => item.bug_type === "QUEEN_BEE"
   );
-  if (queenStillInReserve) {
-    return `Place ${queenName}'s Queen Bee before moving other pieces.`;
+
+  if (pieceColor === currentColor) {
+    if (queenStillInReserve) {
+      return `Place ${colorName(currentColor)}'s Queen Bee before moving other pieces.`;
+    }
+    return "That piece has no legal move right now — it may be pinned (moving it would split the Hive), covered, or was just moved.";
   }
-  return "That piece has no legal move right now — it may be pinned (moving it would split the Hive), covered, or was just moved.";
+
+  // A piece of the *opponent's* color is only ever selectable via one of
+  // the current Player's own Pillbugs (or a Mosquito copying one) Throwing
+  // it — never by ordinary Movement, which only ever acts on your own color.
+  if (queenStillInReserve) {
+    return `Place ${colorName(currentColor)}'s Queen Bee before a Pillbug can Throw another piece.`;
+  }
+  return `None of your Pillbugs can Throw ${colorName(pieceColor)}'s piece right now (it may be stacked, pinned, or was just moved).`;
+}
+
+function explainSelection(code) {
+  const pieceColor = pieceInfo(code).color;
+  if (pieceColor === state.current_turn) return "";
+  const throwMove = state.legal_moves.find(
+    (move) => move.kind === "throw" && move.piece === code
+  );
+  if (!throwMove) return "";
+  return `Throwing ${colorName(pieceColor)}'s piece with your Pillbug (${throwMove.thrower}) — a Pillbug may relocate an adjacent piece, friend or enemy.`;
 }
 
 function selectPiece(code) {
@@ -150,7 +175,7 @@ function selectPiece(code) {
     render();
     return;
   }
-  hintMessage = "";
+  hintMessage = explainSelection(code);
   selected = { pieceCode: code, destinations };
   render();
 }
