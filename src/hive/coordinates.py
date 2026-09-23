@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from functools import cache
 
 
 class Direction(Enum):
@@ -68,10 +69,12 @@ class AxialCoordinate:
         delta_q, delta_r = direction.offset
         return AxialCoordinate(self.q + delta_q, self.r + delta_r)
 
+    @cache  # noqa: B019 — Cells are immutable and few relative to a game's length
     def neighbors(self) -> tuple[tuple[Direction, AxialCoordinate], ...]:
         """All six neighboring Cells, paired with the Direction that reaches each one."""
         return tuple((direction, self.neighbor(direction)) for direction in ALL_DIRECTIONS)
 
+    @cache  # noqa: B019
     def neighbor_set(self) -> frozenset[AxialCoordinate]:
         """The six neighboring Cells, without their Directions."""
         return frozenset(cell for _, cell in self.neighbors())
@@ -87,6 +90,7 @@ class AxialCoordinate:
         return None
 
 
+@cache
 def common_neighbors(a: AxialCoordinate, b: AxialCoordinate) -> frozenset[AxialCoordinate]:
     """The Cells adjacent to both `a` and `b`.
 
