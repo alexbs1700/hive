@@ -10,6 +10,8 @@ Vocabulary: [CONTEXT.md](CONTEXT.md). Recorded decisions: [docs/adr/](docs/adr/)
 
 If `uv run hive-play` or `uv run hive-demo` raises `ModuleNotFoundError: No module named 'hive'`, prefix `PYTHONPATH=src`. This sandbox's Python silently skips `.pth`-based editable installs (confirmed with a throwaway `uv venv` unrelated to this project, so it's environmental, not a project bug). Pytest is unaffected — `pyproject.toml`'s `pythonpath = ["src"]` sidesteps it already.
 
+If `uv run` instead errors `No environment file found at: '.env'`, the user's shell exports `UV_ENV_FILE=.env` globally (their own `~/.zshrc` convention, unrelated to this project). The repo's gitignored `.env` (containing `PYTHONPATH=src`, so it also covers the line above) satisfies that — if it's missing, recreate it rather than touching their shell config.
+
 ## Geometry
 
 Axial `(q, r)`, pointy-top. Six `Direction`s in `coordinates.py`; each has an `.offset` and an `.opposite`. `AxialCoordinate.neighbors()`/`.neighbor_set()` and `common_neighbors()` are `@cache`d — they're pure and get called millions of times per game (a 200-move game went 2.2s → 0.2s from this alone). Don't strip the cache without re-profiling.

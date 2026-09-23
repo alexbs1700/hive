@@ -38,12 +38,10 @@ uv run ruff check .   # lint
 uv run ruff format .  # format
 ```
 
-### A local environment quirk
+### Local environment quirks
 
-In at least one sandboxed execution environment this project was developed in, Python's `.pth`-based editable install mechanism silently doesn't run (confirmed with a fresh, unrelated `uv venv` too, so it isn't specific to this project). `uv run pytest` isn't affected — `pyproject.toml` sets `pythonpath = ["src"]`, which is pytest's own mechanism, independent of `.pth` processing. But if `uv run hive-play` or `uv run hive-demo` fails with `ModuleNotFoundError: No module named 'hive'`, prefix the command with `PYTHONPATH=src`:
+**`.env`**: if your shell sets `UV_ENV_FILE` (check `echo $UV_ENV_FILE`, or look for it in `~/.zshrc`/`~/.bash_profile`), `uv run` requires that file to exist in every project. This repo ships a `.env` (gitignored — it's a local convenience, not project config) containing `PYTHONPATH=src` so `uv run` doesn't error. If you don't use `UV_ENV_FILE`, this file is inert and you can ignore it.
 
-```bash
-PYTHONPATH=src uv run hive-play
-```
+**`.pth` editable installs**: in at least one sandboxed execution environment this project was developed in, Python's `.pth`-based editable install mechanism silently doesn't run (confirmed with a fresh, unrelated `uv venv` too, so it isn't specific to this project). `uv run pytest` isn't affected — `pyproject.toml` sets `pythonpath = ["src"]`, which is pytest's own mechanism, independent of `.pth` processing. If `uv run hive-play` or `uv run hive-demo` fails with `ModuleNotFoundError: No module named 'hive'`, the `.env` above already sets `PYTHONPATH=src` and should cover it; if you've deleted `.env`, prefix the command with `PYTHONPATH=src` directly.
 
-If your terminal doesn't hit this (most won't), you can ignore this section entirely.
+If your terminal hits neither of these, both sections are inert.
