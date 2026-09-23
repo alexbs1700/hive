@@ -1,0 +1,5 @@
+# Separate Inconclusive outcome from Draw
+
+The random-move demo runner needs a safety cap (`max_moves_per_game`) so a batch of self-play smoke-test games can't hang, since Hive has no official move limit and two random players have no incentive to reach a real Win or Draw. We considered recording a cap-out simply as a `Draw` (with a reason code) for a simpler two-outcome model, but decided to keep a third outcome, `Inconclusive`, that is never merged into `Draw`.
+
+`Draw` is reserved exclusively for the rulebook's own outcome (simultaneous double-surround, or an agreed/forced repetition stalemate). `Inconclusive` means only "we stopped watching before the game resolved." This is deliberate because the engine will eventually feed self-play data to a GANN: a `Draw` is a real, informative game-theoretic result, while an `Inconclusive` cutoff carries no such signal and is an artifact of tooling, not of play. Conflating the two now would be easy to do and hard to notice, and unwinding it once training data exists would be far more costly than keeping the distinction from day one.
