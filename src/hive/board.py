@@ -133,16 +133,6 @@ class Board:
         )
         return flanks_are_tall_enough_to_pinch_shut
 
-    def touches_hive_other_than(self, cell: AxialCoordinate, excluding: AxialCoordinate) -> bool:
-        """Whether `cell` has an occupied neighbor other than `excluding`.
-
-        Used to confirm a piece landing on an empty Cell stays in contact
-        with the Hive, without counting the Cell it just slid out of.
-        """
-        return any(
-            neighbor != excluding and self.is_occupied(neighbor) for neighbor in cell.neighbor_set()
-        )
-
     def copy(self) -> Board:
         clone = Board()
         clone._stacks = {cell: list(stack) for cell, stack in self._stacks.items()}

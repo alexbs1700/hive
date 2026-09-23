@@ -151,29 +151,6 @@ def test_climbing_slide_is_blocked_when_both_flanks_are_as_tall_as_the_climb() -
     assert board.gate_blocks_slide(ORIGIN, destination)
 
 
-# --- Contact-with-hive check -------------------------------------------------
-
-
-def test_touches_hive_other_than_ignores_the_vacated_origin() -> None:
-    board = Board()
-    east_direction = ORIGIN.neighbors()[0][0]
-    destination = ORIGIN.neighbor(east_direction)
-    board.place(ORIGIN, QUEEN_W)
-
-    assert not board.touches_hive_other_than(destination, excluding=ORIGIN)
-
-
-def test_touches_hive_other_than_counts_any_other_occupied_neighbor() -> None:
-    board = Board()
-    east_direction = ORIGIN.neighbors()[0][0]
-    destination = ORIGIN.neighbor(east_direction)
-    other_neighbor = [n for _, n in destination.neighbors() if n != ORIGIN][0]
-    board.place(ORIGIN, QUEEN_W)
-    board.place(other_neighbor, QUEEN_B)
-
-    assert board.touches_hive_other_than(destination, excluding=ORIGIN)
-
-
 def _flanking_cells(
     origin: AxialCoordinate, destination: AxialCoordinate
 ) -> tuple[AxialCoordinate, AxialCoordinate]:
