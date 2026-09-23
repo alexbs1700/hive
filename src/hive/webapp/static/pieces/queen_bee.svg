@@ -1,6 +1,10 @@
-<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor" stroke="none">
-  <path d="M31 33 Q35 13 42 29 Q50 8 58 29 Q65 13 69 33 Q58 23 50 27 Q42 23 31 33 Z" />
-  <ellipse cx="25" cy="54" rx="14" ry="9" transform="rotate(-20 25 54)" opacity="0.92" />
-  <ellipse cx="75" cy="54" rx="14" ry="9" transform="rotate(20 75 54)" opacity="0.92" />
-  <path d="M50 39 C65 39 69 52 67 64 C65 78 58 88 50 88 C42 88 35 78 33 64 C31 52 35 39 50 39 Z" />
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M32 34 Q36 15 42 30 Q50 9 58 30 Q64 15 68 34 Q58 24 50 28 Q42 24 32 34 Z" stroke="none" />
+  <ellipse cx="24" cy="55" rx="14" ry="9" transform="rotate(-20 24 55)" stroke="none" opacity="0.88" />
+  <ellipse cx="76" cy="55" rx="14" ry="9" transform="rotate(20 76 55)" stroke="none" opacity="0.88" />
+  <path d="M50 40 C65 40 69 53 67 65 C65 79 58 89 50 89 C42 89 35 79 33 65 C31 53 35 40 50 40 Z" stroke="none" />
+  <line x1="34" y1="63" x2="18" y2="70" stroke-width="5" />
+  <line x1="33" y1="75" x2="17" y2="84" stroke-width="5" />
+  <line x1="66" y1="63" x2="82" y2="70" stroke-width="5" />
+  <line x1="67" y1="75" x2="83" y2="84" stroke-width="5" />
 </svg>
