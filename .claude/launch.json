@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "hive-web",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "hive-web"],
+      "port": 5183
+    }
+  ]
+}

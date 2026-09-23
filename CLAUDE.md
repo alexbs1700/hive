@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Hive board-game engine (base game + Mosquito/Ladybug/Pillbug), future environment for a self-play GANN. Rules engine + terminal UI only — no ML yet.
+Hive board-game engine (base game + Mosquito/Ladybug/Pillbug), future environment for a self-play GANN. Rules engine plus a terminal UI and a browser UI — no ML yet.
 
 Vocabulary: [CONTEXT.md](CONTEXT.md). Recorded decisions: [docs/adr/](docs/adr/). Read both before changing behavior that touches either.
 
@@ -8,7 +8,7 @@ Vocabulary: [CONTEXT.md](CONTEXT.md). Recorded decisions: [docs/adr/](docs/adr/)
 
 `uv run pytest` / `uv run ruff check .` / `uv run ruff format .`
 
-If `uv run hive-play` or `uv run hive-demo` raises `ModuleNotFoundError: No module named 'hive'`, prefix `PYTHONPATH=src`. This sandbox's Python silently skips `.pth`-based editable installs (confirmed with a throwaway `uv venv` unrelated to this project, so it's environmental, not a project bug). Pytest is unaffected — `pyproject.toml`'s `pythonpath = ["src"]` sidesteps it already.
+If `uv run hive-play`, `uv run hive-demo`, or `uv run hive-web` raises `ModuleNotFoundError: No module named 'hive'`, prefix `PYTHONPATH=src`. This sandbox's Python silently skips `.pth`-based editable installs (confirmed with a throwaway `uv venv` unrelated to this project, so it's environmental, not a project bug). Pytest is unaffected — `pyproject.toml`'s `pythonpath = ["src"]` sidesteps it already.
 
 If `uv run` instead errors `No environment file found at: '.env'`, the user's shell exports `UV_ENV_FILE=.env` globally (their own `~/.zshrc` convention, unrelated to this project). The repo's gitignored `.env` (containing `PYTHONPATH=src`, so it also covers the line above) satisfies that — if it's missing, recreate it rather than touching their shell config.
 
@@ -22,7 +22,11 @@ Every movement/gate/contact/connectivity check in `rules.py` and `board.py` assu
 
 ## Module map
 
-`coordinates.py` cells/directions · `pieces.py` Color/BugType/Piece · `board.py` Stack-based Board, One Hive cut-vertex check, Freedom to Move gate formula · `moves.py` the four Move dataclasses · `rules.py` per-Bug-Type movement, Throw, placement legality (pure Board queries, no mutation) · `state.py` mutable GameState (Reserves, turn order, last_moved_piece) · `game.py` the public API: `legal_moves()` / `apply_move()` / `undo_move()` / `result()` · `notation.py` parse/format Move Notation, resolved against `Game.legal_moves()` rather than re-deriving legality · `cli.py` / `demo.py` the two entry points.
+`coordinates.py` cells/directions · `pieces.py` Color/BugType/Piece · `board.py` Stack-based Board, One Hive cut-vertex check, Freedom to Move gate formula · `moves.py` the four Move dataclasses · `rules.py` per-Bug-Type movement, Throw, placement legality (pure Board queries, no mutation) · `state.py` mutable GameState (Reserves, turn order, last_moved_piece) · `game.py` the public API: `legal_moves()` / `apply_move()` / `undo_move()` / `result()` · `notation.py` parse/format Move Notation, resolved against `Game.legal_moves()` rather than re-deriving legality · `cli.py` / `demo.py` the two non-browser entry points · `webapp/server.py` the Flask JSON API (one `Game` singleton in server memory) + `webapp/static/` (`index.html`/`style.css`/`app.js`, hand-drawn minimalist SVG piece icons under `static/pieces/`).
+
+### The web UI's move-resolution pattern
+
+Every API endpoint that changes state (`/api/move`) resolves its input against `game.legal_moves()` — same pattern as `notation.parse_move`, and for the same reason: Movement and Throw share a shape (a piece code + a destination Cell), so matching by `(piece.code, destination)` transparently returns whichever is actually legal without the frontend or the API layer needing to know which. `server._reserve_summary`'s `code` field must be the exact next-numbered Piece Code `Game.legal_moves()` would offer (via `state.peek_from_reserve`) — building it as `f"{color}{bug_type}"` without the number silently breaks every multi-count Bug Type's reserve click (shipped once; `tests/test_webapp.py`'s `test_reserve_codes_match...` pins it down now).
 
 ## Testing hex geometry
 

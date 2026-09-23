@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hive</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Hive</h1>
+    <div class="topbar-controls">
+      <button id="undo-button" class="button button-ghost">Undo</button>
+      <button id="new-game-button" class="button button-ghost">New game</button>
+    </div>
+  </header>
+
+  <div id="status-bar" class="status-bar"></div>
+
+  <main class="board-wrap">
+    <svg id="board" class="board"></svg>
+  </main>
+
+  <footer class="reserves">
+    <section class="reserve-row" data-color="black">
+      <h2>Black</h2>
+      <div id="reserve-black" class="reserve-pieces"></div>
+    </section>
+    <section class="reserve-row" data-color="white">
+      <h2>White</h2>
+      <div id="reserve-white" class="reserve-pieces"></div>
+    </section>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

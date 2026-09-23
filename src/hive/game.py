@@ -47,6 +47,10 @@ class Game:
     def current_turn(self) -> Color:
         return self.state.current_turn
 
+    @property
+    def can_undo(self) -> bool:
+        return bool(self._applied_moves)
+
     def result(self) -> Result:
         white_surrounded = self._is_queen_surrounded(Color.WHITE)
         black_surrounded = self._is_queen_surrounded(Color.BLACK)
