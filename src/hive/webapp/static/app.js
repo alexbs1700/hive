@@ -18,6 +18,7 @@ const BUG_LETTER_TO_FILE = {
 const iconMarkup = {};
 let state = null;
 let selected = null; // { pieceCode, destinations: [{q, r}, ...] }
+let hintMessage = ""; // explains why a click landed on nothing, until the next real change
 
 function cellKey(q, r) {
   return `${q},${r}`;
@@ -81,6 +82,7 @@ async function fetchState() {
   const response = await fetch("/api/state");
   state = await response.json();
   selected = null;
+  hintMessage = "";
   render();
 }
 
@@ -97,6 +99,7 @@ async function postJson(url, body) {
   }
   state = data;
   selected = null;
+  hintMessage = "";
   render();
   return true;
 }
@@ -116,9 +119,24 @@ function movablePieceCodes() {
   return new Set(state.legal_moves.map((move) => move.piece).filter(Boolean));
 }
 
+function explainWhyInert(code) {
+  const color = pieceInfo(code).color;
+  const queenName = color === "white" ? "White" : "Black";
+  const queenStillInReserve = (state.reserves[color] || []).some(
+    (item) => item.bug_type === "QUEEN_BEE"
+  );
+  if (queenStillInReserve) {
+    return `Place ${queenName}'s Queen Bee before moving other pieces.`;
+  }
+  return "That piece has no legal move right now — it may be pinned (moving it would split the Hive), covered, or was just moved.";
+}
+
 function selectPiece(code) {
+  if (state.is_over) return;
+
   if (selected && selected.pieceCode === code) {
     selected = null;
+    hintMessage = "";
     render();
     return;
   }
@@ -126,7 +144,13 @@ function selectPiece(code) {
     .filter((move) => move.piece === code)
     .map((move) => move.to)
     .filter(Boolean);
-  if (destinations.length === 0) return;
+  if (destinations.length === 0) {
+    selected = null;
+    hintMessage = explainWhyInert(code);
+    render();
+    return;
+  }
+  hintMessage = "";
   selected = { pieceCode: code, destinations };
   render();
 }
@@ -149,6 +173,8 @@ function renderStatusBar() {
     html += `<span class="result-banner">${message}</span>`;
   } else if (state.legal_moves.length === 1 && state.legal_moves[0].kind === "pass") {
     html += `<button id="pass-button" class="button button-primary">No legal moves — Pass</button>`;
+  } else if (hintMessage) {
+    html += `<span class="hint-banner">${hintMessage}</span>`;
   }
 
   bar.innerHTML = html;

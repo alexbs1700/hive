@@ -121,6 +121,12 @@ body {
   color: var(--accent);
 }
 
+.hint-banner {
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+}
+
 .board-wrap {
   flex: 1;
   display: flex;
@@ -171,7 +177,18 @@ body {
   color: var(--tile-white);
 }
 
-.piece-clickable {
+/* Pieces with no legal move right now (covered, the Last-Moved Piece, a
+   One Hive Rule cut vertex, or movement locked until the Queen Bee is
+   placed) are dimmed — same "greyed out = not actionable" language as an
+   unplaceable Reserve item — so it's obvious at a glance which pieces on
+   the board can be clicked, instead of silently doing nothing on click. */
+.piece {
+  opacity: 0.5;
+}
+
+.piece-clickable,
+.piece-selected {
+  opacity: 1;
   cursor: pointer;
 }
 
