@@ -2,7 +2,7 @@
 
 A from-scratch Python implementation of the board game [Hive](https://gen42.com/games/hive) (base game plus the Mosquito, Ladybug, and Pillbug expansions), built as the future environment for a self-play-trained GANN.
 
-This phase covers the rules engine plus a terminal and a browser UI — no ML/training code yet. See [CONTEXT.md](CONTEXT.md) for the project's vocabulary and [docs/adr/](docs/adr/) for recorded design decisions.
+This phase covers the rules engine plus a terminal and a browser UI — no ML/training code yet. See [CONTEXT.md](CONTEXT.md) for the project's vocabulary and [docs/adr/](docs/adr/) for recorded design decisions. Piece icons in the browser UI are third-party artwork — see [CREDITS.md](CREDITS.md).
 
 ## Setup
 
