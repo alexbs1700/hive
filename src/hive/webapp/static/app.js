@@ -45,6 +45,11 @@ async function loadIcons() {
   // repeat. Inlining just the inner markup into a plain <g> would drop
   // that inheritance (SVG defaults to fill="black" stroke="none"), so the
   // root's attributes are carried over onto the wrapping <g> at render time.
+  //
+  // Icons are sourced from third-party artwork with varying native
+  // viewBoxes (e.g. 512x512, 36x36) rather than a shared 100x100 convention,
+  // so each one's viewBox is recorded too and used to scale/center it
+  // uniformly regardless of its native size — see iconGroup().
   const presentationAttributes = [
     "fill",
     "stroke",
@@ -63,15 +68,21 @@ async function loadIcons() {
         .filter((name) => root.hasAttribute(name))
         .map((name) => `${name}="${root.getAttribute(name)}"`)
         .join(" ");
-      iconMarkup[letter] = { attrs, inner: root.innerHTML };
+      const viewBoxAttr = root.getAttribute("viewBox") || "0 0 100 100";
+      const [minX, minY, vbWidth, vbHeight] = viewBoxAttr.trim().split(/\s+/).map(Number);
+      iconMarkup[letter] = { attrs, inner: root.innerHTML, minX, minY, vbWidth, vbHeight };
     })
   );
 }
 
-function iconGroup(bugType, extraAttrs) {
+/** A <g>, centered on its own local (0,0), rendering `bugType`'s icon at `size` across its longest dimension. */
+function iconGroup(bugType, size) {
   const icon = iconMarkup[bugType];
   if (!icon) return "";
-  return `<g ${icon.attrs} ${extraAttrs || ""}>${icon.inner}</g>`;
+  const scale = size / Math.max(icon.vbWidth, icon.vbHeight);
+  const offsetX = -(icon.minX + icon.vbWidth / 2) * scale;
+  const offsetY = -(icon.minY + icon.vbHeight / 2) * scale;
+  return `<g ${icon.attrs} transform="translate(${offsetX},${offsetY}) scale(${scale})">${icon.inner}</g>`;
 }
 
 function pieceInfo(code) {
@@ -226,8 +237,6 @@ function renderBoard() {
   const movable = movablePieceCodes();
   const points = hexPoints();
   const iconSize = HEX_SIZE * 1.45;
-  const iconOffset = -iconSize / 2;
-  const iconScale = iconSize / 100;
 
   let html = "";
   for (const cell of cells) {
@@ -248,8 +257,7 @@ function renderBoard() {
 
       html += `<g class="${pieceClasses.join(" ")}" data-piece="${topCode}">`;
       html += `<polygon class="piece-hex" points="${points}" />`;
-      const iconTransform = `translate(${iconOffset},${iconOffset}) scale(${iconScale})`;
-      html += iconGroup(info.bugType, `transform="${iconTransform}"`);
+      html += iconGroup(info.bugType, iconSize);
       if (occupant.stack.length > 1) {
         html += `<text class="stack-badge" x="${HEX_SIZE * 0.55}" y="${-HEX_SIZE * 0.5}">&times;${
           occupant.stack.length
@@ -280,7 +288,7 @@ function renderReserves() {
       if (isActive) classes.push("active");
       if (selected && selected.pieceCode === item.code) classes.push("selected");
       html += `<div class="${classes.join(" ")}" data-reserve="${item.code}" title="${item.bug_type}">`;
-      html += `<svg viewBox="0 0 100 100">${iconGroup(item.code[1])}</svg>`;
+      html += `<svg viewBox="-50 -50 100 100">${iconGroup(item.code[1], 90)}</svg>`;
       html += `<span class="reserve-count">${item.count}</span>`;
       html += `</div>`;
     }
@@ -300,15 +308,26 @@ function render() {
 }
 
 function handleBoardClick(event) {
+  const cellEl = event.target.closest("[data-cell]");
+
+  // A highlighted destination always completes the selected Piece's Move,
+  // even when it's occupied (a Beetle — or a Mosquito copying one —
+  // climbing onto another Piece). Checked before piece-selection below:
+  // the piece sitting on a climb target is nested inside that same Cell,
+  // so without this check a click there would re-select it instead of
+  // completing the climb.
+  if (selected && cellEl) {
+    const [q, r] = cellEl.getAttribute("data-cell").split(",").map(Number);
+    const isDestination = selected.destinations.some((d) => d.q === q && d.r === r);
+    if (isDestination) {
+      postJson("/api/move", { piece: selected.pieceCode, to: { q, r } });
+      return;
+    }
+  }
+
   const pieceEl = event.target.closest("[data-piece]");
   if (pieceEl) {
     selectPiece(pieceEl.getAttribute("data-piece"));
-    return;
-  }
-  const cellEl = event.target.closest("[data-cell]");
-  if (cellEl && selected) {
-    const [q, r] = cellEl.getAttribute("data-cell").split(",").map(Number);
-    postJson("/api/move", { piece: selected.pieceCode, to: { q, r } });
   }
 }
 
