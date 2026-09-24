@@ -79,10 +79,10 @@ Add entry points in `pyproject.toml` alongside the existing `hive-play`/`hive-de
 - `action_space.py`: the piece-slot × window-cell factorization described above (`ACTION_SHAPE = (28, 29, 29)`); `legal_action_map(game)` groups every legal `Move` by its action index for masking.
 - Tests: shape, egocentric framing (verified interactively — after White's opening move it's Black's turn, and that same Piece now shows in the *opponent* channel), centroid centering, and action-index round-tripping.
 
-### Phase 1 — Network, inference only
-- `network.py`: small CNN or MLP over the windowed board, policy head + value head. No training loop yet.
-- Sanity check: a randomly-initialized network runs on a real `GameState`, output shapes are right, and the policy is correctly zero-masked to legal moves only.
-- Wire up MLflow (local file store) now, even with nothing to train — logging becomes a habit from the first real run instead of retrofitted later.
+### Phase 1 — Network, inference only ✅ done
+- `network.py`: `HiveNet`, a small configurable ResNet trunk (`config.py`'s `NetworkConfig`) with a policy head over the full `action_space.ACTION_SHAPE` and a `tanh`-bounded value head. `evaluate_position(net, game)` is the real interface — masks raw logits down to `game.legal_moves()` and softmax-normalizes over only those, splitting probability evenly across Moves that share an action index rather than picking one arbitrarily.
+- Sanity check: verified interactively (not just asserted in tests) — a randomly-initialized network's masked output covers every legal Move exactly, sums to ~1.0, and the forced-Pass case returns probability 1 on the Pass.
+- MLflow not wired up yet — there's still nothing to log until Phase 3/4 produce real training runs; revisit then rather than adding it speculatively now.
 
 ### Phase 2 — MCTS
 - `mcts.py`: PUCT-style search built directly on `Game.apply_move()` / `Game.undo_move()` — the make/unmake architecture this engine already has is exactly what MCTS wants; no state-copying needed per simulation.
