@@ -22,7 +22,7 @@ Every movement/gate/contact/connectivity check in `rules.py` and `board.py` assu
 
 ## Module map
 
-`coordinates.py` cells/directions · `pieces.py` Color/BugType/Piece · `board.py` Stack-based Board, One Hive cut-vertex check, Freedom to Move gate formula · `moves.py` the four Move dataclasses · `rules.py` per-Bug-Type movement, Throw, placement legality (pure Board queries, no mutation) · `state.py` mutable GameState (Reserves, turn order, last_moved_piece) · `game.py` the public API: `legal_moves()` / `apply_move()` / `undo_move()` / `result()` · `notation.py` parse/format Move Notation, resolved against `Game.legal_moves()` rather than re-deriving legality · `cli.py` / `demo.py` the two non-browser entry points · `webapp/server.py` the Flask JSON API (one `Game` singleton in server memory) + `webapp/static/` (`index.html`/`style.css`/`app.js`, hand-drawn minimalist SVG piece icons under `static/pieces/`).
+`coordinates.py` cells/directions · `pieces.py` Color/BugType/Piece · `board.py` Stack-based Board, One Hive cut-vertex check, Freedom to Move gate formula · `moves.py` the four Move dataclasses · `rules.py` per-Bug-Type movement, Throw, placement legality (pure Board queries, no mutation) · `state.py` mutable GameState (Reserves, turn order, last_moved_piece) · `game.py` the public API: `legal_moves()` / `apply_move()` / `undo_move()` / `result()` · `notation.py` parse/format Move Notation, resolved against `Game.legal_moves()` rather than re-deriving legality · `cli.py` / `demo.py` the two non-browser entry points · `webapp/server.py` the Flask JSON API (one `Game` singleton in server memory) + `webapp/static/` (`index.html`/`style.css`/`app.js`, third-party piece icons under `static/pieces/` — see [CREDITS.md](../CREDITS.md), most CC0 but the Pillbug's is CC BY 3.0 and requires attribution).
 
 ### The web UI's move-resolution pattern
 
@@ -34,4 +34,4 @@ Hand arithmetic on multi-step axial paths (Spider, Ladybug, Ant) is error-prone 
 
 ## Not built yet
 
-No Gym/Gymnasium-style RL API (deliberate — see CONTEXT.md's Special Ability/API surface decisions), no persistence/SQLite, no ML/training code, no automatic detection of the rulebook's forced-repetition Draw (documented as a known open edge case in CONTEXT.md's `Draw` entry). Don't assume any of these exist; don't add them without the user asking.
+No Gym/Gymnasium-style RL API (deliberate — see CONTEXT.md's Special Ability/API surface decisions), no persistence/SQLite, no ML/training code, no automatic detection of the rulebook's forced-repetition Draw (documented as a known open edge case in CONTEXT.md's `Draw` entry). Don't assume any of these exist; don't add them without the user asking. When that work starts, [docs/agent-roadmap.md](docs/agent-roadmap.md) has the plan — phased build order, `src/hive/agent/` folder structure, and the package list (kept behind an `agent` optional-dependency group so the base engine/UI install stays ML-free).
