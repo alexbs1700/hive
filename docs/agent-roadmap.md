@@ -16,16 +16,16 @@ Given a `Game`, return one of `game.legal_moves()`. Nothing about *how* that dec
 Two things fall out of this for free:
 
 - **A shared arena.** One tournament/evaluation harness plays *any* two agents against each other and reports results — that's how you'd actually compare AlphaZero-so-far against a GenAI agent, not just against a fixed baseline. Evaluation stops being AlphaZero-specific.
-- **`hive-demo`'s random player becomes just another `Agent`.** Worth unifying when the first real implementation lands (`agents/random_agent.py` wrapping the existing `rng.choice(game.legal_moves())` logic, with `demo.py` calling it), rather than duplicating the same pattern twice.
+- **`hive-demo`'s random player becomes just another `Agent`.** ✅ Done — `agents/random_agent.py` wraps the same `rng.choice(game.legal_moves())` logic as an `Agent`; `demo.py` itself hasn't been switched over to call it yet (a small follow-up, not urgent).
 
 Each implementation encodes the game its own way — an AlphaZero agent needs the tensor/action-space encoding described below; a GenAI agent needs a text encoding instead (this project's own Move Notation is a natural fit, since it's already a compact, human/LLM-readable text format — see [CONTEXT.md](../CONTEXT.md#notation)). Encoding strategy is therefore per-agent, not a shared module every implementation is forced through.
 
 Two open design questions the AlphaZero track's Phase 0 needs to settle concretely before any code lands there:
 
-1. **Board window size** — the fixed egocentric hex-radius the state encoding crops to. Too small clips real positions; too large wastes network capacity on empty cells.
-2. **Action factorization** — piece × direction (6 directions + climb), reusing the shape of this project's own Move Notation. Needs a concrete indexing scheme (which piece slots, how Throw is represented) before `action_space.py` can be written.
+Both were settled with data/reasoning rather than guessed, and are now implemented (`agents/alphazero/encoding.py`, `agents/alphazero/action_space.py`):
 
-Both are prototype decisions best settled by looking at real game-length/spread statistics from `hive-demo`'s random self-play data, not guessed in the abstract.
+1. **Board window size** — settled at `WINDOW_RADIUS = 14`, from sampling 60 random `hive-demo`-style games (up to the 400-move cap) and measuring max Cell distance from origin (11). The window centers on the hive's own centroid, recomputed every call — not the game's own origin or a fixed world coordinate — since any Piece, including the very first one placed, can in principle walk arbitrarily far from where it started given enough turns.
+2. **Action factorization** — turned out *not* to be piece × direction after all. That shape (sketched here originally, reusing Move Notation's reference-piece-plus-direction idea) doesn't extend cleanly to Ant/Spider/Ladybug's multi-step destinations or to Throw — both need a destination that isn't expressible as "one of 6 directions from the piece's current position." The implemented scheme is **piece × destination cell within the encoding window** instead — the same shape Go's AlphaZero policy uses (one output per board intersection), just piece-scoped rather than absolute, since Hive's board has no fixed size to index absolutely. This covers Placement/Movement/Throw uniformly with no per-Bug-Type special-casing, at the cost of a bigger but still small policy head (28 piece slots × 29 × 29 — 28, not 14, because a Throw can target either side's Piece).
 
 ## Folder structure
 
@@ -59,23 +59,25 @@ src/hive/
 checkpoints/    # gitignored — saved AlphaZero network weights per generation
 mlruns/          # gitignored — local MLflow tracking store
 tests/
-  test_agents_protocol.py    # any Agent, including a trivial stub, satisfies the interface
-  test_agents_arena.py         # two stub agents play a full game via arena.py
-  agents/
-    test_alphazero_encoding.py
-    test_alphazero_action_space.py
-    test_alphazero_mcts.py    # e.g. MCTS + random weights reliably beats pure-random play
-    test_genai_parsing.py       # malformed/illegal completions are rejected, not silently misapplied
+  test_agents_protocol.py      # any Agent, including a trivial stub, satisfies the interface
+  test_agents_arena.py           # play_game/play_match, including the illegal-move guard
+  test_agents_random_agent.py      # always returns one of game.legal_moves()
+  test_alphazero_encoding.py         # shape, egocentric framing, centroid centering
+  test_alphazero_action_space.py       # slot indexing, action-index round-tripping
+  test_alphazero_mcts.py                 # e.g. MCTS + random weights reliably beats RandomAgent
+  test_genai_parsing.py                    # malformed/illegal completions are rejected, not misapplied
 ```
+
+Flat, not nested under `tests/agents/` as first sketched here — matches this project's existing flat `tests/` convention (no `__init__.py` anywhere in it) rather than introducing a package-style subdirectory for one corner of the suite.
 
 Add entry points in `pyproject.toml` alongside the existing `hive-play`/`hive-demo`/`hive-web` as each track gets an orchestration script worth running directly (e.g. `hive-train-alphazero`) — and, once `arena.py` exists, something like `hive-arena` to run any two named agents against each other from the command line.
 
 ## AlphaZero track: phased roadmap
 
-### Phase 0 — Encoding & action space
-- `encoding.py`: `GameState` → fixed-size feature-plane tensor (one plane per (Color, Bug Type) occupancy, plus scalar planes for whose turn, each side's Queen-placed flag, turn count).
-- `action_space.py`: the piece × direction factorization; masks a raw policy output down to whatever `Game.legal_moves()` actually allows this turn.
-- Tests: encode → decode round-trips; every legal `Move` maps to exactly one action index and back.
+### Phase 0 — Encoding & action space ✅ done
+- `encoding.py`: `GameState` → a `(21, 29, 29)` float32 tensor — 8 "mine" + 8 "opponent's" Bug Type occupancy planes, stack height, each side's Queen-placed flag, turn number, and a Last-Moved Piece marker.
+- `action_space.py`: the piece-slot × window-cell factorization described above (`ACTION_SHAPE = (28, 29, 29)`); `legal_action_map(game)` groups every legal `Move` by its action index for masking.
+- Tests: shape, egocentric framing (verified interactively — after White's opening move it's Black's turn, and that same Piece now shows in the *opponent* channel), centroid centering, and action-index round-tripping.
 
 ### Phase 1 — Network, inference only
 - `network.py`: small CNN or MLP over the windowed board, policy head + value head. No training loop yet.
@@ -120,20 +122,15 @@ No phased build-out for this track yet — it's here so the folder structure and
 
 Base engine/UI (`uv sync`) stays exactly as it is — no ML or LLM dependency should be required just to play a game or run the demo. Everything below goes behind optional-dependency groups (`uv sync --extra alphazero`, `uv sync --extra genai`) so trying one track doesn't drag in the other's dependencies.
 
-### `alphazero` extra
+### `alphazero` extra ✅ settled and installed
 
-**Option A — DeepMind's own stack** (if that's literally what "DeepMind's infra" meant):
-- `jax` — array/autodiff backend
-- `dm-haiku` or `flax` — network definition (Haiku is closer to DeepMind's own historical AlphaZero-style code; Flax is more actively developed today)
-- `optax` — DeepMind's optimizer library, pairs with either
-- `mctx` — DeepMind's own JAX-native MCTS library; this is the one that most directly matches "AlphaZero-style search," and would let `mcts.py` be a thin wrapper rather than a from-scratch implementation
-- `chex` (optional) — DeepMind's testing/assertion helpers for JAX code
+PyTorch, not DeepMind's JAX/`mctx` stack (ruled out — no Google packages):
+- `torch>=2.2` — network + autodiff; solid Apple Silicon MPS backend, relevant given local hardware (confirmed available: `torch.backends.mps.is_available()` is `True` here)
+- `numpy>=1.26` — feature-plane construction in `encoding.py`
+- `mlflow>=2.14` — experiment tracking, local file store
+- `tqdm>=4.66` — progress bars for self-play/training loops
 
-**Option B — framework-agnostic** (simpler, more common default):
-- `torch` — network + autodiff (solid Apple Silicon MPS backend, relevant given local hardware)
-- `numpy` — feature-plane construction, general array prep
-
-Either option: `mlflow` (experiment tracking, local file store), `tqdm` (progress bars).
+`mcts.py` (Phase 2) will therefore be a from-scratch PUCT implementation rather than a thin wrapper around `mctx` — the one place this choice adds real work instead of just picking a different import.
 
 ### `genai` extra
 
